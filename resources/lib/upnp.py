@@ -6,6 +6,8 @@ import xml.dom.minidom
 import urllib2
 from urlparse import urlparse
 
+from . import json_functions
+
 
 # https://gist.github.com/dankrause/6000248
 class SSDPResponse(object):
@@ -51,10 +53,18 @@ def discover(service, timeout=5, retries=1, mx=3):
 def find_kodi():
     kodi_dict = {}
     upnp_list = discover('upnp:rootdevice')
+
     for result in upnp_list:
-	    doc = xml.dom.minidom.parse(urllib2.urlopen(result.location))
-	    for modelName in doc.getElementsByTagName("modelName"):
-		    if modelName.firstChild.data in ('XBMC Media Center', 'Kodi'):
-			    kodi_dict[urlparse(doc.getElementsByTagName("presentationURL")[0].firstChild.data).netloc] = doc.getElementsByTagName("friendlyName")[0].firstChild.data
+        doc = xml.dom.minidom.parse(urllib2.urlopen(result.location))
+        for modelName in doc.getElementsByTagName("modelName"):
+            # Kodi
+            if modelName.firstChild.data in ('XBMC Media Center', 'Kodi'):
+                kodi_dict[urlparse(doc.getElementsByTagName("presentationURL")[0].firstChild.data).netloc] = doc.getElementsByTagName("friendlyName")[0].firstChild.data
+                
+            # Fire TV stick
+            elif modelName.firstChild.data == 'AFTT':
+                ip, port = result.location.split('/')[2].split(':')
+                if json_functions.jsonrpc(method='JSONRPC.Ping', ip=ip, port='8080', timeout=5) == 'pong':
+                    kodi_dict['http://{0}:8080/'.format(ip)] = json_functions.jsonrpc("XBMC.GetInfoLabels", {"labels": ["System.FriendlyName"]}, ip=ip, port='8080')['System.FriendlyName']
 
     return kodi_dict
