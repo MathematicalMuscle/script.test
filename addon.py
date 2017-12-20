@@ -3,13 +3,16 @@ import xbmcaddon
 import xbmcgui
 import xbmcvfs
 
-import socket
+from resources.lib import get_local_ip_address
+from resources.lib import upnp
 
 
-# get the local IP address
-# https://stackoverflow.com/a/25850698
-s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-s.connect(('8.8.8.8', 1))  # connect() for UDP doesn't send packets
-local_ip_address = s.getsockname()[0]
-
-xbmcgui.Dialog().ok('IP Address', local_ip_address)
+if __name__ == '__main__':
+    local_ip_address = get_local_ip_address.get_local_ip_address()
+    xbmcgui.Dialog().ok('IP Address', local_ip_address)
+    
+    kodi_dict = upnp.find_kodi()
+    xbmcgui.Dialog().ok('Kodi List', str(kodi_dict.values()))
+    
+    upnp_list = upnp.discover('upnp:rootdevice')
+    xbmcgui.Dialog().ok('UPnP List', '\n\n'.join([str(x) for x in upnp_list]))
