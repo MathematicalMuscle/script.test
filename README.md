@@ -1,4 +1,12 @@
-To install via `script.kodi_setter_upper`:
+## Installation via [`script.kodi_setter_upper`](https://github.com/MathematicalMuscle/script.kodi_setter_upper):
+
+### Method 1: URL
+
+Modify the IP address and port and go to this URL in your browser:
+[http://10.0.0.120:8080/jsonrpc?request={"jsonrpc":"2.0","id":1,"method":"Addons.ExecuteAddon","params":{"addonid":"script.kodi_setter_upper","params":{"ksu_class":"Addon","addonid":"script.test","url":"https://github.com/MathematicalMuscle/script.test/archive/master.zip"}}}](http://10.0.0.120:8080/jsonrpc?request={"jsonrpc":"2.0","id":1,"method":"Addons.ExecuteAddon","params":{"addonid":"script.kodi_setter_upper","params":{"ksu_class":"Addon","addonid":"script.test","url":"https://github.com/MathematicalMuscle/script.test/archive/master.zip"}}})
+
+
+### Method 2: Command Line
 
 ```bash
 send_jsonrpc ()
