@@ -14,6 +14,7 @@ class SSDPResponse(object):
     class _FakeSocket(StringIO.StringIO):
         def makefile(self, *args, **kw):
             return self
+            
     def __init__(self, response):
         r = httplib.HTTPResponse(self._FakeSocket(response))
         r.begin()
@@ -21,8 +22,13 @@ class SSDPResponse(object):
         self.usn = r.getheader("usn")
         self.st = r.getheader("st")
         self.cache = r.getheader("cache-control").split("=")[1]
+        
+        doc = xml.dom.minidom.parse(urllib2.urlopen(self.location))
+        self.friendlyName = doc.getElementsByTagName("friendlyName")[0].firstChild.data
+        
     def __repr__(self):
-        return "<SSDPResponse({location}, {st}, {usn})>".format(**self.__dict__)
+        return "<SSDPResponse({location}, {st}, {usn}, {friendlyName})>".format(**self.__dict__)
+        
 
 
 # https://gist.github.com/dankrause/6000248
@@ -65,6 +71,6 @@ def find_kodi():
             elif modelName.firstChild.data == 'AFTT':
                 ip, port = result.location.split('/')[2].split(':')
                 if json_functions.jsonrpc(method='JSONRPC.Ping', ip=ip, port='8080', timeout=5) == 'pong':
-                    kodi_dict['http://{0}:8080/'.format(ip)] = json_functions.jsonrpc("XBMC.GetInfoLabels", {"labels": ["System.FriendlyName"]}, ip=ip, port='8080')['System.FriendlyName']
+                    kodi_dict[ip] = json_functions.jsonrpc("XBMC.GetInfoLabels", {"labels": ["System.FriendlyName"]}, ip=ip, port='8080')['System.FriendlyName']
 
     return kodi_dict
