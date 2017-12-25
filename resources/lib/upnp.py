@@ -23,8 +23,12 @@ class SSDPResponse(object):
         self.st = r.getheader("st")
         self.cache = r.getheader("cache-control").split("=")[1]
         
-        doc = xml.dom.minidom.parse(urllib2.urlopen(self.location))
-        self.friendlyName = doc.getElementsByTagName("friendlyName")[0].firstChild.data
+        try:
+            self.doc = xml.dom.minidom.parse(urllib2.urlopen(self.location))
+            self.friendlyName = self.doc.getElementsByTagName("friendlyName")[0].firstChild.data
+        except:
+            self.doc = None
+            self.friendlyName = '<Unknown>'
         
     def __repr__(self):
         return "<SSDPResponse({location}, {st}, {usn}, {friendlyName})>".format(**self.__dict__)
@@ -61,16 +65,16 @@ def find_kodi():
     upnp_list = discover('upnp:rootdevice')
 
     for result in upnp_list:
-        doc = xml.dom.minidom.parse(urllib2.urlopen(result.location))
-        for modelName in doc.getElementsByTagName("modelName"):
-            # Kodi
-            if modelName.firstChild.data in ('XBMC Media Center', 'Kodi'):
-                kodi_dict[urlparse(doc.getElementsByTagName("presentationURL")[0].firstChild.data).netloc] = doc.getElementsByTagName("friendlyName")[0].firstChild.data
-                
-            # Fire TV stick
-            elif modelName.firstChild.data == 'AFTT':
-                ip, port = result.location.split('/')[2].split(':')
-                if json_functions.jsonrpc(method='JSONRPC.Ping', ip=ip, port='8080', timeout=5) == 'pong':
-                    kodi_dict[ip] = json_functions.jsonrpc("XBMC.GetInfoLabels", {"labels": ["System.FriendlyName"]}, ip=ip, port='8080')['System.FriendlyName']
+        if result.doc:
+            for modelName in result.doc.getElementsByTagName("modelName"):
+                # Kodi
+                if modelName.firstChild.data in ('XBMC Media Center', 'Kodi'):
+                    kodi_dict[urlparse(result.doc.getElementsByTagName("presentationURL")[0].firstChild.data).netloc] = result.friendlyName
+                    
+                # Fire TV stick
+                elif modelName.firstChild.data == 'AFTT':
+                    ip, port = result.location.split('/')[2].split(':')
+                    if json_functions.jsonrpc(method='JSONRPC.Ping', ip=ip, port='8080', timeout=5) == 'pong':
+                        kodi_dict[ip] = json_functions.jsonrpc("XBMC.GetInfoLabels", {"labels": ["System.FriendlyName"]}, ip=ip, port='8080')['System.FriendlyName']
 
     return kodi_dict
