@@ -5,7 +5,6 @@ import StringIO
 import xml.dom.minidom
 import urllib2
 from urlparse import urlparse
-from multiprocessing.dummy import Pool
 
 from . import get_local_ip_address
 from . import json_functions
@@ -85,12 +84,20 @@ def find_kodi(timeout=2, port='8080'):
     return sorted(kodi_dict.items(), key=lambda x: x[0])
 
 
-def find_kodi_brute_force(timeout=1, port='8080'):    
-    ip_mask = '.'.join(get_local_ip_address.get_local_ip_address().split('.')[:3])
-    pool = Pool(255)
-    ping_list = pool.map(lambda x: ('{0}.{1}'.format(ip_mask, x), json_functions.jsonrpc("JSONRPC.Ping", ip='{0}.{1}'.format(ip_mask, x), port=port, timeout=timeout)), range(256))
-    pool.close()
-    pool.join()
+def find_kodi_brute_force(timeout=1, port='8080'):
+    try:
+        from multiprocessing.dummy import Pool
     
-    kodi_list = [('{0}:{1}'.format(x[0], port), json_functions.jsonrpc("XBMC.GetInfoLabels", {"labels": ["System.FriendlyName"]}, ip=x[0], port=port)['System.FriendlyName']) for x in ping_list if x[1] == 'pong']
-    return kodi_list
+        ip_mask = '.'.join(get_local_ip_address.get_local_ip_address().split('.')[:3])
+        pool = Pool(255)
+        ping_list = pool.map(lambda x: ('{0}.{1}'.format(ip_mask, x), json_functions.jsonrpc("JSONRPC.Ping", ip='{0}.{1}'.format(ip_mask, x), port=port, timeout=timeout)), range(256))
+        pool.close()
+        pool.join()
+        
+        kodi_list = [('{0}:{1}'.format(x[0], port), json_functions.jsonrpc("XBMC.GetInfoLabels", {"labels": ["System.FriendlyName"]}, ip=x[0], port=port)['System.FriendlyName']) for x in ping_list if x[1] == 'pong']
+        return kodi_list
+        
+    except:
+        import xbmcgui
+        xbmcgui.Dialog().ok('`find_kodi_brute_force()`', 'Could not import `multiprocessing.dummy`')
+        return None

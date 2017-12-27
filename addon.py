@@ -22,4 +22,5 @@ if __name__ == '__main__':
     
     # find Kodi systems by brute force
     kodi_list = upnp.find_kodi_brute_force()
-    xbmcgui.Dialog().ok('Kodi List (brute force)', '\n\n'.join([str(x) for x in kodi_list]))
+    if kodi_list is not None:
+        xbmcgui.Dialog().ok('Kodi List (brute force)', '\n\n'.join([str(x) for x in kodi_list]))
