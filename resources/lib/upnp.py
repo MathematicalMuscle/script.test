@@ -5,7 +5,9 @@ import StringIO
 import xml.dom.minidom
 import urllib2
 from urlparse import urlparse
+from multiprocessing.dummy import Pool
 
+from . import get_local_ip_address
 from . import json_functions
 
 
@@ -60,10 +62,13 @@ def discover(service, timeout=5, retries=1, mx=3):
 
 
 # https://github.com/jonisb/KodiEventGhost/blob/master/__init__.py
-def find_kodi():
-    kodi_dict = {}
-    upnp_list = discover('upnp:rootdevice')
-
+def find_kodi(timeout=2, port='8080'):
+    local_ip_address = get_local_ip_address.get_local_ip_address()
+    local_port = json_functions.jsonrpc("Settings.GetSettingValue", {"setting":"services.webserverport"})['value']
+    local_friendlyname = json_functions.jsonrpc("XBMC.GetInfoLabels", {"labels": ["System.FriendlyName"]})['System.FriendlyName']
+    kodi_dict = {'{0}:{1}'.format(local_ip_address, local_port): local_friendlyname}
+    
+    upnp_list = discover('upnp:rootdevice', timeout=timeout)
     for result in upnp_list:
         if result.doc:
             for modelName in result.doc.getElementsByTagName("modelName"):
@@ -73,8 +78,19 @@ def find_kodi():
                     
                 # Fire TV stick
                 elif modelName.firstChild.data == 'AFTT':
-                    ip, port = result.location.split('/')[2].split(':')
-                    if json_functions.jsonrpc(method='JSONRPC.Ping', ip=ip, port='8080', timeout=5) == 'pong':
-                        kodi_dict[ip] = json_functions.jsonrpc("XBMC.GetInfoLabels", {"labels": ["System.FriendlyName"]}, ip=ip, port='8080')['System.FriendlyName']
+                    ip = result.location.split('/')[2].split(':')[0]
+                    if json_functions.jsonrpc(method='JSONRPC.Ping', ip=ip, port=port, timeout=1) == 'pong':
+                        kodi_dict['{0}:{1}'.format(ip, port)] = json_functions.jsonrpc("XBMC.GetInfoLabels", {"labels": ["System.FriendlyName"]}, ip=ip, port=port)['System.FriendlyName']
 
-    return kodi_dict
+    return sorted(kodi_dict.items(), key=lambda x: x[0])
+
+
+def find_kodi_brute_force(timeout=1, port='8080'):    
+    ip_mask = '.'.join(get_local_ip_address.get_local_ip_address().split('.')[:3])
+    pool = Pool(255)
+    ping_list = pool.map(lambda x: ('{0}.{1}'.format(ip_mask, x), json_functions.jsonrpc("JSONRPC.Ping", ip='{0}.{1}'.format(ip_mask, x), port=port, timeout=timeout)), range(256))
+    pool.close()
+    pool.join()
+    
+    kodi_list = [('{0}:{1}'.format(x[0], port), json_functions.jsonrpc("XBMC.GetInfoLabels", {"labels": ["System.FriendlyName"]}, ip=x[0], port=port)['System.FriendlyName']) for x in ping_list if x[1] == 'pong']
+    return kodi_list
