@@ -17,7 +17,7 @@ def jsonrpc(method, params=None, addonid=None, ip=None, port=None, username=None
     payload = {'jsonrpc': '2.0', 'method': method, 'id': '1'}
 
     if params is not None:
-        if addonid is not None:
+        if addonid is not None and addonid == xbmcaddon.Addon().getAddonInfo('name'):
             payload['params'] = {'addonid': addonid, 'params': urllib.quote_plus(str(params))}
         else:
             payload['params'] = params
@@ -27,7 +27,7 @@ def jsonrpc(method, params=None, addonid=None, ip=None, port=None, username=None
 
     # local JSON-RPC
     if ip is None:
-        response = eval(xbmc.executeJSONRPC(data).replace(':true', ':True').replace(':false', ':False'))
+        response = json.loads(xbmc.executeJSONRPC(data))
 
     # remote JSON-RPC
     else:
@@ -66,7 +66,7 @@ def from_jsonrpc(parameters):
     """Extract a dictionary of the parameters sent via a JSON-RPC command
 
     """
-    params = eval(urllib.unquote_plus(parameters).replace('streaminfo=', ''))
+    params = eval(urllib.unquote_plus(parameters))
     if 'url' in params:
         if isinstance(params['url'], str):
             params['url'] = params['url'].replace(' ', '')
