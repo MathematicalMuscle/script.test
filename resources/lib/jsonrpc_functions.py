@@ -1,10 +1,8 @@
-"""JSON functions
+"""JSON-RPC functions
 
 """
 
-
 import xbmc
-import xbmcaddon
 
 import base64
 import json
@@ -13,11 +11,14 @@ import urllib2
 
 
 def jsonrpc(method, params=None, addonid=None, ip=None, port=None, username=None, password=None, timeout=15):
+    """Send a JSON-RPC command
+    
+    """
     # build out the data to be sent
     payload = {'jsonrpc': '2.0', 'method': method, 'id': '1'}
 
     if params is not None:
-        if addonid is not None and addonid == xbmcaddon.Addon().getAddonInfo('name'):
+        if addonid is not None:
             payload['params'] = {'addonid': addonid, 'params': urllib.quote_plus(str(params))}
         else:
             payload['params'] = params
@@ -42,7 +43,7 @@ def jsonrpc(method, params=None, addonid=None, ip=None, port=None, username=None
 
         # send the command
         try:
-            response = urllib2.urlopen(req, timeout=15)
+            response = urllib2.urlopen(req, timeout=timeout)
             response = response.read()
             response = json.loads(response)
 
@@ -70,4 +71,8 @@ def from_jsonrpc(parameters):
     if 'url' in params:
         if isinstance(params['url'], str):
             params['url'] = params['url'].replace(' ', '')
+    if 'url_redirect' in params:
+        if isinstance(params['url_redirect'], str):
+            params['url_redirect'] = params['url_redirect'].replace(' ', '')
     return params
+
