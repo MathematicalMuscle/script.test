@@ -3,6 +3,7 @@ import xbmcgui
 
 import sys
 
+from resources.lib import get_external_ip_address
 from resources.lib import get_local_ip_address
 from resources.lib import jsonrpc_functions
 from resources.lib import upnp
@@ -10,6 +11,7 @@ from resources.lib import upnp
 
 def menu():
     opts = ['Get local IP address',
+            'Get external IP address',
             'Find Kodi systems',
             'Find Kodi systems (brute force)',
             'Find UPnP devices']
@@ -20,7 +22,11 @@ def menu():
         
         if selection == 'Get local IP address':
             local_ip_address = get_local_ip_address.get_local_ip_address()
-            xbmcgui.Dialog().ok('IP Address', local_ip_address)
+            xbmcgui.Dialog().ok('Local IP Address', local_ip_address)
+
+        elif selection == 'Get external IP address':
+            external_ip_address = get_external_ip_address.get_external_ip_address()
+            xbmcgui.Dialog().ok('External IP Address', external_ip_address)
         
         elif selection == 'Find Kodi systems':
             kodi_list = upnp.find_kodi()
@@ -40,4 +46,3 @@ def menu():
 if __name__ == '__main__':
     if len(sys.argv) == 1:
         menu()
-
